@@ -1,27 +1,23 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Route } from 'react-router-dom'
-import Header from './components/Header'
-import Footer from './components/Footer'
-import Tasks from './components/Tasks'
-import AddTask from './components/AddTask'
-import About from './components/About'
+import { FaTimes } from 'react-icons/fa'
 
 
 const App = () => {
   const [showAddTask, setShowAddTask] = useState(false)
   const [tasks, setTasks] = useState([])
-
+  const [text, setText] = useState('')
+  const [day, setDay] = useState('')
+  const [reminder, setReminder] = useState('false')
 
   useEffect(() => {
     const getTasks = async () => {
       const tasksFromServer = await fetchTasks()
       setTasks(tasksFromServer)
     }
-
     getTasks()
   }, [])
 
-  //fetch tasks
+  //FETCH tasks
   const fetchTasks = async () => {
     const res = await fetch('http://localhost:5000/tasks')
     const data = await res.json()
@@ -29,7 +25,7 @@ const App = () => {
     return data
   }
 
-  //fetch tasks
+  //FETCH tasks
   const fetchTask = async (id) => {
     const res = await fetch(`http://localhost:5000/tasks/${id}`)
     const data = await res.json()
@@ -37,7 +33,7 @@ const App = () => {
     return data
   }
 
-  //add task
+  //ADD task
   const addTask = async (task) => {
     const res = await fetch(
       'http://localhost:5000/tasks',
@@ -52,7 +48,7 @@ const App = () => {
     setTasks([...tasks, data])
   }
 
-  //delete task
+  //DELETE task
   const deleteTask = async (id) => {
     await fetch(`http://localhost:5000/tasks/${id}`,
       {
@@ -63,7 +59,7 @@ const App = () => {
     ))
   }
 
-  //toggle reminder
+  //UPDATE (toggle reminder)
   const toggleReminder = async (id) => {
     const taskToToggle = await fetchTask(id)
     const updTask = {
@@ -95,32 +91,96 @@ const App = () => {
     )
   }
 
+  const onSubmit = (e) => {
+    e.preventDefault()
+    if (!text) {
+      alert('Please add text')
+      return
+    }
+    addTask({ text, day, reminder })
+
+    setText('')
+    setDay('')
+    setReminder(false)
+  }
+
+
+
+
 
   return (
-    <Router>
-      <div className="container">
-        <Header
-          onAdd={() => setShowAddTask(!showAddTask)}
-          showAdd={showAddTask}
-        />
+    <div className="container">
+      <header className='header'>
+        <h1>Task Tracker</h1>
+      </header>
 
-        {showAddTask &&
-          <AddTask
-            onAdd={addTask}
-          />
-        }
-        {tasks.length > 0 ?
-          <Tasks
-            tasks={tasks}
-            onDelete={deleteTask}
-            onToggle={toggleReminder}
-          />
-          : 'No tasks to show'
-        }
-        <Route path='/about' component={About} />
-        <Footer />
-      </div>
-    </Router>
+      <button
+        onClick={() => setShowAddTask(!showAddTask)}
+        style={{ backgroundColor: (showAddTask ? 'red' : 'green') }}
+        className='btn'
+      > {showAddTask ? 'Close' : 'Add'}
+      </button>
+
+      {showAddTask &&
+
+        <form className='add-form' onSubmit={onSubmit}>
+          <div className='form-control'>
+            <label>Task </label>
+            <input type='text' placeholder='Add Task' value={text}
+              onChange={(e) => setText(e.target.value)}
+            />
+          </div>
+
+          <div className='form-control'>
+            <label>Day & Time </label>
+            <input type='text' placeholder='Add Day & Time' value={day}
+              onChange={(e) => setDay(e.target.value)}
+            />
+          </div>
+
+          <div className='form-control form-control-check'>
+            <label>Set Reminder </label>
+            <input type='checkbox' value={reminder}
+              onChange={(e) => setReminder(e.currentTarget.checked)}
+            />
+          </div>
+
+          <input type='submit' value='Save Task' className='btn btn-block' />
+        </form>
+
+      }
+
+
+      {tasks.length > 0 ?
+        <>
+          {tasks.map(
+            (task, index) => (
+              //key = { index }
+              <div className={`task ${task.reminder ? 'reminder' : ''}`}
+                onDoubleClick={() => toggleReminder(task.id)}>
+
+                <h3>
+                  {task.text}
+                  <FaTimes
+                    style={{ color: 'red', cursor: 'pointer' }}
+                    onClick={() => deleteTask(task.id)}
+                  />
+                </h3>
+                <p>{task.day}</p>
+              </div>
+            ))
+          }
+        </>
+        : 'No tasks to show'
+      }
+
+      <footer>
+        <p>Copypight &copy; 2021</p>
+        <a href='/about'> About</a>
+      </footer>
+
+    </div>
+
   )
 }
 
